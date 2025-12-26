@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>民眾藥品查詢系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #10b981; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        [v-cloak] { display: none; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak class="w-full max-w-5xl mx-auto bg-white min-h-screen relative flex flex-col shadow-xl">
+
+    <div v-if="error" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <p class="font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 系統訊息</p>
+        <p class="text-sm">{{ error }}</p>
+        <button @click="error = ''" class="mt-2 text-xs bg-white border border-red-300 px-2 py-1 rounded">關閉</button>
+    </div>
+
+    <header class="sticky top-0 bg-emerald-600 p-4 shadow-md z-30">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-white text-xl font-bold flex items-center cursor-pointer" @click="resetToHome">
+                <i class="fa-solid fa-pills mr-2"></i> 民眾藥品查詢
+            </h1>
+            <button v-if="keyword" @click="resetToHome" class="text-xs bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-1.5 rounded-full transition border border-emerald-400 shadow-sm">
+                <i class="fa-solid fa-rotate-left mr-1"></i> 重置搜尋
+            </button>
+        </div>
+
+        <div class="relative max-w-2xl mx-auto">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-gray-400 text-lg"></i>
+            <input 
+                v-model="keyword" 
+                type="text" 
+                placeholder="請輸入藥名、適應症 (例如：頭痛、胃痛)..." 
+                class="w-full pl-12 pr-10 py-3 rounded-full border-none focus:ring-4 focus:ring-emerald-300 outline-none shadow-lg text-gray-700 text-base"
+            >
+            <button v-if="keyword" @click="keyword=''" class="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 p-4 bg-gray-50 overflow-y-auto">
+        
+        <div v-if="loading" class="text-center py-20 text-gray-500">
+            <div class="loader"></div>
+            <p>資料載入中...</p>
+        </div>
+
+        <div v-if="!loading && !keyword" class="flex flex-col items-center justify-center py-32 text-gray-400">
+            <div class="bg-gray-100 p-8 rounded-full mb-6">
+                <i class="fa-solid fa-capsules text-6xl text-emerald-200"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-600 mb-2">歡迎使用藥品查詢</h2>
+            <p class="text-gray-500">請在上方輸入關鍵字查詢本院藥品資訊</p>
+        </div>
+
+        <div v-if="!loading && keyword" class="animate-slide-up">
+            <div v-if="filteredDrugs.length === 0" class="text-center py-20 text-gray-400">
+                <i class="fa-regular fa-folder-open text-5xl mb-4 text-gray-300"></i>
+                <p class="text-lg">找不到符合「{{ keyword }}」的藥品</p>
+            </div>
+
+            <div v-else>
+                <p class="mb-4 text-gray-500 font-bold px-1">搜尋結果：共 {{ filteredDrugs.length }} 筆</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div 
+                        v-for="drug in filteredDrugs" 
+                        :key="drug.code" 
+                        @click="openDetail(drug)"
+                        class="bg-white rounded-xl p-4 card-shadow border border-gray-100 hover:border-emerald-300 active:bg-emerald-50 transition-colors cursor-pointer flex flex-col h-full"
+                    >
+                        <div class="flex items-start mb-3">
+                            <div class="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0 mr-4 overflow-hidden border flex items-center justify-center">
+                                <img v-if="drug.imgUrl" :src="drug.imgUrl" class="w-full h-full object-cover" loading="lazy" @error="imageLoadError">
+                                <i v-else class="fa-solid fa-image text-gray-300 text-3xl"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-lg leading-tight mb-1 text-emerald-800 break-words">
+                                    {{ drug.tradeName }}
+                                </h3>
+                                <p class="text-gray-500 text-sm mb-2 font-medium">{{ drug.genericName }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-auto bg-gray-50 p-2 rounded-lg">
+                            <span class="text-xs font-bold text-gray-400 block mb-1">適應症</span>
+                            <p class="text-gray-700 text-sm line-clamp-2">{{ drug.indication }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div v-if="selectedDrug" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4" @click.self="closeDetail">
+        <div class="bg-white w-full max-w-lg rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-slide-up max-h-[90vh]">
+            
+            <div class="flex justify-between items-start p-4 border-b bg-gray-50">
+                <div class="flex-1 pr-4">
+                    <h2 class="font-bold text-xl text-gray-800 leading-tight">{{ selectedDrug.tradeName }}</h2>
+                    <p class="text-gray-500 text-sm mt-1">{{ selectedDrug.genericName }}</p>
+                </div>
+                <button @click="closeDetail" class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition flex-shrink-0">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                
+                <div class="w-full bg-white rounded-xl border flex items-center justify-center overflow-hidden relative shadow-sm min-h-[200px]">
+                    <img v-if="selectedDrug.imgUrl" :src="selectedDrug.imgUrl" class="max-h-64 object-contain" @error="imageLoadError">
+                    <div v-else class="text-gray-400 py-10 flex flex-col items-center">
+                        <i class="fa-solid fa-image text-5xl mb-2"></i>
+                        <span>暫無圖片</span>
+                    </div>
+                </div>
+
+                <section>
+                    <h3 class="text-base font-bold text-emerald-600 mb-2 border-b border-emerald-100 pb-1 flex items-center">
+                        <i class="fa-solid fa-stethoscope mr-2"></i> 適應症 (用途)
+                    </h3>
+                    <p class="text-gray-800 text-base leading-relaxed">{{ selectedDrug.indication }}</p>
+                </section>
+
+                <section v-if="selectedDrug.sideEffect">
+                    <h3 class="text-base font-bold text-orange-600 mb-2 border-b border-orange-100 pb-1 flex items-center">
+                        <i class="fa-solid fa-notes-medical mr-2"></i> 可能副作用
+                    </h3>
+                    <p class="text-gray-700 text-base leading-relaxed">{{ selectedDrug.sideEffect }}</p>
+                </section>
+
+                <section v-if="selectedDrug.profNote">
+                    <h3 class="text-base font-bold text-blue-600 mb-2 border-b border-blue-100 pb-1 flex items-center">
+                        <i class="fa-solid fa-circle-info mr-2"></i> 用藥須知
+                    </h3>
+                    <p class="text-gray-700 text-base leading-relaxed bg-blue-50 p-3 rounded-lg">
+                        {{ selectedDrug.profNote }}
+                    </p>
+                </section>
+
+            </div>
+            
+            <div class="p-4 border-t bg-gray-50">
+                <button @click="closeDetail" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-center font-bold text-lg shadow-md transition">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    // ============== 資料來源 ==============
+    // 使用與醫事版相同的資料來源
+    const DRUG_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTl_HoBeP0qBD79IB7Ulp_xAMRX4Gyx65pgU-4Kf15Lu4g4FqGdVBDSn1BEI6sNXht889zjRx6RErb-/pub?output=csv';
+    const ATC_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMhr-Ocv4uEN6virOvzsEY-c1-tCEs-e1lB-fvB9d2U2XCtcDaHnLnob_Vu6Ktjce4YErY9y6FuaxD/pub?output=csv';
+    const CLOUDINARY_CLOUD_NAME = 'de02nbokt'; 
+    // ======================================
+
+    createApp({
+        setup() {
+            const keyword = ref('');
+            const drugs = ref([]);
+            const selectedDrug = ref(null);
+            const loading = ref(true);
+            const error = ref('');
+
+            // Fuse.js 模糊搜尋設定：僅搜尋民眾看得懂的欄位
+            let fuse = null;
+            const fuseOptions = {
+                keys: [
+                    { name: 'tradeName', weight: 0.4 },   // 藥名 (高權重)
+                    { name: 'genericName', weight: 0.3 }, // 學名
+                    { name: 'indication', weight: 0.3 }   // 適應症
+                ],
+                threshold: 0.3,       
+                ignoreLocation: true,
+                useExtendedSearch: true
+            };
+
+            const fetchCsv = (url) => new Promise((resolve, reject) => {
+                Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: (r) => resolve(r.data), error: (e) => reject(e) });
+            });
+
+            const fetchAllData = () => {
+                loading.value = true;
+                // 雖然我們不需要顯示價格或替代藥，但為了確保資料 mapping 邏輯一致，我們還是讀取 ATC_DATA
+                Promise.all([fetchCsv(DRUG_DATA_URL), fetchCsv(ATC_DATA_URL)])
+                    .then(([drugData, atcData]) => {
+                        const atcMap = {};
+                        atcData.forEach(row => {
+                            if(row['藥品代碼']) {
+                                atcMap[row['藥品代碼'].trim()] = {
+                                    orderNote: row['醫令提示訊息'] ? row['醫令提示訊息'].trim() : '' 
+                                };
+                            }
+                        });
+                        processData(drugData, atcMap);
+                        loading.value = false;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        error.value = "資料讀取失敗，請稍後再試。";
+                        loading.value = false;
+                    });
+            };
+
+            const processData = (rawData, atcMap) => {
+                let processed = rawData.map(row => {
+                    const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
+                    if(!code) return null;
+                    
+                    // 維持基本資料過濾邏輯
+                    if (code.length !== 6) return null;
+                    if (code.startsWith('653')) return null;
+
+                    const genericName = row['學名'] || '';
+                    const tradeName = row['商品名(英文)'] || row['商品名'] || '無商品名';
+
+                    if (tradeName.includes('贈') || genericName.includes('贈')) return null;
+
+                    const mapData = atcMap[code] || { orderNote: '' };
+                    const orderNote = mapData.orderNote;
+
+                    const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
+
+                    return {
+                        code, 
+                        genericName, tradeName, 
+                        indication: row['適應症']||row['臨床用途']||'尚無資料', 
+                        sideEffect: row['副作用']||'',
+                        // 依照需求：顯示「醫護用藥須知」欄位
+                        profNote: row['醫護用藥須知'] ? row['醫護用藥須知'].trim() : '', 
+                        
+                        imgUrl: imgName ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}` : null,
+                    };
+                }).filter(d => d !== null);
+
+                drugs.value = processed;
+                fuse = new Fuse(processed, fuseOptions);
+            };
+
+            const filteredDrugs = computed(() => {
+                if (!keyword.value) return [];
+                
+                const k = keyword.value.trim();
+                if (fuse) {
+                    const searchResults = fuse.search(k);
+                    return searchResults.map(res => res.item);
+                }
+                return [];
+            });
+
+            const resetToHome = () => { keyword.value = ''; };
+            const openDetail = (drug) => selectedDrug.value = drug;
+            const closeDetail = () => selectedDrug.value = null;
+            const imageLoadError = (e) => { e.target.style.display = 'none'; }; 
+
+            onMounted(() => { fetchAllData(); });
+
+            return {
+                keyword, filteredDrugs, selectedDrug, loading, error,
+                resetToHome, openDetail, closeDetail, imageLoadError
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
