@@ -130,6 +130,13 @@
                     </div>
                 </div>
 
+                <section v-if="selectedDrug.dosage">
+                    <h3 class="text-base font-bold text-indigo-600 mb-2 border-b border-indigo-100 pb-1 flex items-center">
+                        <i class="fa-solid fa-clock mr-2"></i> 用法用量
+                    </h3>
+                    <p class="text-gray-800 text-base leading-relaxed font-medium">{{ selectedDrug.dosage }}</p>
+                </section>
+
                 <section>
                     <h3 class="text-base font-bold text-emerald-600 mb-2 border-b border-emerald-100 pb-1 flex items-center">
                         <i class="fa-solid fa-stethoscope mr-2"></i> 適應症 (用途)
@@ -168,12 +175,9 @@
 <script>
     const { createApp, ref, computed, onMounted } = Vue;
 
-    // ============== 資料來源 ==============
-    // 使用與醫事版相同的資料來源
     const DRUG_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTl_HoBeP0qBD79IB7Ulp_xAMRX4Gyx65pgU-4Kf15Lu4g4FqGdVBDSn1BEI6sNXht889zjRx6RErb-/pub?output=csv';
     const ATC_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMhr-Ocv4uEN6virOvzsEY-c1-tCEs-e1lB-fvB9d2U2XCtcDaHnLnob_Vu6Ktjce4YErY9y6FuaxD/pub?output=csv';
     const CLOUDINARY_CLOUD_NAME = 'de02nbokt'; 
-    // ======================================
 
     createApp({
         setup() {
@@ -183,17 +187,53 @@
             const loading = ref(true);
             const error = ref('');
 
-            // Fuse.js 模糊搜尋設定：僅搜尋民眾看得懂的欄位
             let fuse = null;
             const fuseOptions = {
                 keys: [
-                    { name: 'tradeName', weight: 0.4 },   // 藥名 (高權重)
-                    { name: 'genericName', weight: 0.3 }, // 學名
-                    { name: 'indication', weight: 0.3 }   // 適應症
+                    { name: 'tradeName', weight: 0.4 },
+                    { name: 'genericName', weight: 0.3 },
+                    { name: 'indication', weight: 0.3 }
                 ],
                 threshold: 0.3,       
                 ignoreLocation: true,
                 useExtendedSearch: true
+            };
+
+            // === 英文縮寫自動翻譯對照表 ===
+            const dosageMap = {
+                'PO': '口服', 'P.O.': '口服', 'ORAL': '口服',
+                'IV': '靜脈注射', 'I.V.': '靜脈注射',
+                'IM': '肌肉注射', 'I.M.': '肌肉注射',
+                'SC': '皮下注射', 'S.C.': '皮下注射',
+                'SL': '舌下含服', 'TOPICAL': '局部使用',
+                'QD': '每日一次', 'Q.D.': '每日一次',
+                'BID': '每日兩次', 'B.I.D.': '每日兩次',
+                'TID': '每日三次', 'T.I.D.': '每日三次',
+                'QID': '每日四次', 'Q.I.D.': '每日四次',
+                'QOD': '每隔一日', 'Q.O.D.': '每隔一日',
+                'Q1H': '每1小時', 'Q2H': '每2小時', 'Q3H': '每3小時', 
+                'Q4H': '每4小時', 'Q6H': '每6小時', 'Q8H': '每8小時', 'Q12H': '每12小時',
+                'AC': '飯前', 'A.C.': '飯前',
+                'PC': '飯後', 'P.C.': '飯後',
+                'HS': '睡前', 'H.S.': '睡前',
+                'PRN': '需要時',
+                'STAT': '立即',
+                'TAB': '錠', 'CAP': '膠囊', 'VIAL': '瓶', 'AMP': '安瓿',
+                'MG': '毫克', 'ML': '毫升', 'GM': '公克'
+            };
+
+            // 翻譯函式：使用正則表達式進行全字詞替換，避免誤判
+            const translateDosage = (text) => {
+                if (!text) return '';
+                let result = text;
+                for (const [key, value] of Object.entries(dosageMap)) {
+                    // 使用 \b 確保是完整單字 (例如不會把 POLE 裡的 PO 換掉)
+                    // 將 key 中的 . 進行跳脫
+                    const safeKey = key.replace('.', '\\.');
+                    const regex = new RegExp(`\\b${safeKey}\\b`, 'gi');
+                    result = result.replace(regex, value);
+                }
+                return result;
             };
 
             const fetchCsv = (url) => new Promise((resolve, reject) => {
@@ -202,7 +242,6 @@
 
             const fetchAllData = () => {
                 loading.value = true;
-                // 雖然我們不需要顯示價格或替代藥，但為了確保資料 mapping 邏輯一致，我們還是讀取 ATC_DATA
                 Promise.all([fetchCsv(DRUG_DATA_URL), fetchCsv(ATC_DATA_URL)])
                     .then(([drugData, atcData]) => {
                         const atcMap = {};
@@ -228,7 +267,6 @@
                     const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
                     if(!code) return null;
                     
-                    // 維持基本資料過濾邏輯
                     if (code.length !== 6) return null;
                     if (code.startsWith('653')) return null;
 
@@ -237,9 +275,15 @@
 
                     if (tradeName.includes('贈') || genericName.includes('贈')) return null;
 
-                    const mapData = atcMap[code] || { orderNote: '' };
-                    const orderNote = mapData.orderNote;
+                    // 1. 判斷是否停用
+                    const status1 = row['門診停用否'] ? row['門診停用否'].trim().toUpperCase() : '';
+                    const status2 = row['住院停用否'] ? row['住院停用否'].trim().toUpperCase() : '';
+                    let isDiscontinued = (status1 === 'Y' || status2 === 'Y') && !(status1 === 'N' || status2 === 'N');
 
+                    // 如果已停用，直接不回傳資料 (即不顯示)
+                    if (isDiscontinued) return null;
+
+                    const mapData = atcMap[code] || { orderNote: '' };
                     const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
 
                     return {
@@ -247,9 +291,11 @@
                         genericName, tradeName, 
                         indication: row['適應症']||row['臨床用途']||'尚無資料', 
                         sideEffect: row['副作用']||'',
-                        // 依照需求：顯示「醫護用藥須知」欄位
                         profNote: row['醫護用藥須知'] ? row['醫護用藥須知'].trim() : '', 
                         
+                        // 2. 處理用法用量並翻譯
+                        dosage: translateDosage(row['用量用法'] || ''),
+
                         imgUrl: imgName ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}` : null,
                     };
                 }).filter(d => d !== null);
