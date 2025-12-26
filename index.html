@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
-        /* 加深陰影讓卡片更立體 */
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid #10b981; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -231,6 +230,9 @@
                     const tradeName = row['商品名(英文)'] || row['商品名'] || '無商品名';
 
                     if (tradeName.includes('贈') || genericName.includes('贈')) return null;
+                    
+                    // 新增：排除「(非本院品項)」的藥品
+                    if (tradeName.includes('(非本院品項)')) return null;
 
                     // 1. 判斷是否停用 (民眾版不顯示停用藥品)
                     const status1 = row['門診停用否'] ? row['門診停用否'].trim().toUpperCase() : '';
@@ -239,8 +241,11 @@
 
                     if (isDiscontinued) return null;
 
-                    const mapData = atcMap[code] || { orderNote: '' };
+                    // 2. 新增：若無圖片名稱，直接排除不顯示
                     const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
+                    if (!imgName) return null;
+
+                    const mapData = atcMap[code] || { orderNote: '' };
 
                     return {
                         code, 
@@ -249,9 +254,7 @@
                         sideEffect: row['副作用']||'',
                         profNote: row['醫護用藥須知'] ? row['醫護用藥須知'].trim() : '', 
                         
-                        // 已移除 dosage 欄位處理
-
-                        imgUrl: imgName ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}` : null,
+                        imgUrl: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}`,
                     };
                 }).filter(d => d !== null);
 
