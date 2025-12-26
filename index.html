@@ -3,25 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>民眾藥品查詢系統</title>
+    <title>衛生福利部豐原醫院 - 民眾藥品查詢</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'fy-blue': '#005ca1', // 豐原醫院深藍
+                        'fy-green': '#4c9f59', // 衛福部綠
+                        'fy-light-blue': '#eef6fc', // 淺藍底色
+                        'fy-btn-blue': '#0d6efd', // 搜尋按鈕藍
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #10b981; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #005ca1; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         [v-cloak] { display: none; }
         .animate-slide-up { animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        /* 模擬豐原醫院網站的麵包屑導航樣式 */
+        .breadcrumbs { font-size: 0.9rem; color: #666; margin-bottom: 1rem; }
+        .breadcrumbs i { margin-right: 5px; color: #333; }
     </style>
 </head>
 <body>
 
-<div id="app" v-cloak class="w-full max-w-7xl mx-auto bg-white min-h-screen relative flex flex-col shadow-2xl">
+<div id="app" v-cloak class="w-full max-w-7xl mx-auto bg-white min-h-screen relative flex flex-col shadow-2xl border-t-8 border-fy-green">
 
     <div v-if="error" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-xl shadow-lg">
         <p class="font-bold text-lg"><i class="fa-solid fa-triangle-exclamation mr-2"></i> 系統訊息</p>
@@ -29,43 +47,64 @@
         <button @click="error = ''" class="mt-3 text-sm bg-white border border-red-300 px-4 py-2 rounded-lg">關閉</button>
     </div>
 
-    <header class="sticky top-0 bg-emerald-600 p-5 shadow-lg z-30">
+    <div class="px-4 py-2 bg-white hidden md:block">
+        <div class="breadcrumbs">
+            <i class="fa-solid fa-house"></i> 首頁 <i class="fa-solid fa-angle-right mx-1"></i> 便民服務 <i class="fa-solid fa-angle-right mx-1"></i> <span class="text-fy-blue font-bold">藥品查詢</span>
+        </div>
+    </div>
+
+    <header class="sticky top-0 bg-fy-blue p-5 shadow-md z-30">
         <div class="flex justify-between items-center mb-5">
-            <h1 class="text-white text-2xl md:text-3xl font-bold flex items-center cursor-pointer tracking-wide" @click="resetToHome">
-                <i class="fa-solid fa-pills mr-3"></i> 民眾藥品查詢
+            <h1 class="text-white text-2xl md:text-3xl font-bold flex items-center cursor-pointer tracking-wider" @click="resetToHome">
+                <i class="fa-solid fa-puzzle-piece mr-3"></i> 藥品查詢
             </h1>
-            <button v-if="keyword" @click="resetToHome" class="text-base bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2 rounded-full transition border border-emerald-400 shadow-md">
+            <button v-if="keyword" @click="resetToHome" class="text-base bg-white text-fy-blue hover:bg-gray-100 px-5 py-2 rounded-full transition shadow font-bold">
                 <i class="fa-solid fa-rotate-left mr-1"></i> 重新搜尋
             </button>
         </div>
 
         <div class="relative max-w-4xl mx-auto">
-            <i class="fa-solid fa-magnifying-glass absolute left-6 top-5 text-gray-400 text-2xl"></i>
             <input 
                 v-model="keyword" 
                 type="text" 
                 placeholder="請輸入藥名、適應症 (例如：頭痛、胃痛)..." 
-                class="w-full pl-16 pr-12 py-4 rounded-full border-none focus:ring-4 focus:ring-emerald-300 outline-none shadow-xl text-gray-800 text-xl placeholder:text-gray-400"
+                class="w-full pl-6 pr-14 py-4 rounded-full border-2 border-blue-200 focus:border-fy-blue focus:ring-4 focus:ring-blue-100 outline-none shadow-lg text-gray-800 text-xl placeholder:text-gray-400"
             >
-            <button v-if="keyword" @click="keyword=''" class="absolute right-5 top-4 text-gray-400 hover:text-gray-600">
-                <i class="fa-solid fa-circle-xmark text-3xl"></i>
+            <button class="absolute right-2 top-2 bottom-2 bg-fy-btn-blue hover:bg-blue-700 text-white rounded-full w-12 flex items-center justify-center transition" @click="keyword && (keyword='')">
+                <i v-if="!keyword" class="fa-solid fa-magnifying-glass text-xl"></i>
+                <i v-else class="fa-solid fa-xmark text-xl"></i>
             </button>
         </div>
     </header>
 
-    <main class="flex-1 p-4 md:p-6 bg-gray-50 overflow-y-auto">
+    <main class="flex-1 p-4 md:p-8 bg-white overflow-y-auto">
         
         <div v-if="loading" class="text-center py-32 text-gray-500">
             <div class="loader"></div>
-            <p class="text-xl mt-4">資料載入中，請稍候...</p>
+            <p class="text-xl mt-4">資料同步中，請稍候...</p>
         </div>
 
-        <div v-if="!loading && !keyword" class="flex flex-col items-center justify-center py-32 text-gray-400">
-            <div class="bg-gray-100 p-10 rounded-full mb-6">
-                <i class="fa-solid fa-capsules text-7xl text-emerald-200"></i>
+        <div v-if="!loading && !keyword" class="flex flex-col items-center justify-center py-20 text-gray-400">
+            <div class="bg-fy-light-blue p-10 rounded-full mb-6 border border-blue-100">
+                <i class="fa-solid fa-magnifying-glass-plus text-7xl text-fy-blue opacity-50"></i>
             </div>
             <h2 class="text-3xl font-bold text-gray-600 mb-3">歡迎使用藥品查詢</h2>
             <p class="text-xl text-gray-500">請在上方輸入關鍵字查詢本院藥品資訊</p>
+            
+            <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl opacity-70">
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <span class="block text-fy-blue font-bold text-lg mb-1">藥名查詢</span>
+                    <span class="text-sm">輸入英文或中文藥名</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <span class="block text-fy-blue font-bold text-lg mb-1">適應症查詢</span>
+                    <span class="text-sm">輸入症狀關鍵字</span>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                    <span class="block text-fy-blue font-bold text-lg mb-1">外觀辨識</span>
+                    <span class="text-sm">查看藥品照片</span>
+                </div>
+            </div>
         </div>
 
         <div v-if="!loading && keyword" class="animate-slide-up">
@@ -75,31 +114,34 @@
             </div>
 
             <div v-else>
-                <p class="mb-4 text-gray-600 font-bold px-1 text-lg">搜尋結果：共 {{ filteredDrugs.length }} 筆</p>
+                <div class="flex items-center mb-6 px-1">
+                    <span class="bg-fy-blue w-1 h-6 mr-3 rounded"></span>
+                    <p class="text-gray-700 font-bold text-xl">搜尋結果：共 {{ filteredDrugs.length }} 筆</p>
+                </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div 
                         v-for="drug in filteredDrugs" 
                         :key="drug.code" 
                         @click="openDetail(drug)"
-                        class="bg-white rounded-2xl p-5 card-shadow border border-gray-100 hover:border-emerald-400 hover:shadow-lg active:bg-emerald-50 transition-all cursor-pointer flex flex-col h-full"
+                        class="bg-white rounded-2xl p-5 card-shadow border border-gray-200 hover:border-fy-blue hover:shadow-xl active:bg-blue-50 transition-all cursor-pointer flex flex-col h-full group"
                     >
                         <div class="flex items-start mb-4">
-                            <div class="w-24 h-24 bg-gray-100 rounded-xl flex-shrink-0 mr-5 overflow-hidden border flex items-center justify-center">
+                            <div class="w-24 h-24 bg-gray-50 rounded-xl flex-shrink-0 mr-5 overflow-hidden border border-gray-200 flex items-center justify-center group-hover:border-blue-300 transition">
                                 <img v-if="drug.imgUrl" :src="drug.imgUrl" class="w-full h-full object-cover" loading="lazy" @error="imageLoadError">
                                 <i v-else class="fa-solid fa-image text-gray-300 text-4xl"></i>
                             </div>
                             <div class="flex-1 min-w-0 py-1">
-                                <h3 class="font-bold text-xl md:text-2xl leading-tight mb-2 text-emerald-800 break-words">
+                                <h3 class="font-bold text-xl md:text-2xl leading-tight mb-2 text-fy-blue break-words group-hover:text-blue-600">
                                     {{ drug.tradeName }}
                                 </h3>
                                 <p class="text-gray-500 text-base font-medium">{{ drug.genericName }}</p>
                             </div>
                         </div>
                         
-                        <div class="mt-auto bg-gray-50 p-3 rounded-xl">
-                            <span class="text-sm font-bold text-gray-400 block mb-1">適應症 (用途)</span>
-                            <p class="text-gray-700 text-base md:text-lg line-clamp-2">{{ drug.indication }}</p>
+                        <div class="mt-auto bg-fy-light-blue p-4 rounded-xl border border-blue-100">
+                            <span class="text-sm font-bold text-gray-500 block mb-1">適應症 (用途)</span>
+                            <p class="text-gray-800 text-base md:text-lg line-clamp-2">{{ drug.indication }}</p>
                         </div>
                     </div>
                 </div>
@@ -108,15 +150,15 @@
     </main>
 
     <div v-if="selectedDrug" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-md p-4" @click.self="closeDetail">
-        <div class="bg-white w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-slide-up max-h-[90vh]">
+        <div class="bg-white w-full max-w-2xl rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-slide-up max-h-[90vh] border-t-8 border-fy-blue">
             
-            <div class="flex justify-between items-start p-5 border-b bg-gray-50">
+            <div class="flex justify-between items-start p-6 border-b bg-gray-50">
                 <div class="flex-1 pr-4">
                     <h2 class="font-bold text-2xl md:text-3xl text-gray-800 leading-tight">{{ selectedDrug.tradeName }}</h2>
-                    <p class="text-gray-500 text-lg mt-1">{{ selectedDrug.genericName }}</p>
+                    <p class="text-gray-500 text-lg mt-1 font-medium">{{ selectedDrug.genericName }}</p>
                 </div>
-                <button @click="closeDetail" class="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition flex-shrink-0">
-                    <i class="fa-solid fa-times text-xl"></i>
+                <button @click="closeDetail" class="w-12 h-12 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition flex-shrink-0">
+                    <i class="fa-solid fa-times text-2xl"></i>
                 </button>
             </div>
 
@@ -131,7 +173,7 @@
                 </div>
 
                 <section>
-                    <h3 class="text-xl font-bold text-emerald-600 mb-3 border-b-2 border-emerald-100 pb-2 flex items-center">
+                    <h3 class="text-xl font-bold text-fy-blue mb-3 border-b-2 border-blue-100 pb-2 flex items-center">
                         <i class="fa-solid fa-stethoscope mr-3"></i> 適應症 (用途)
                     </h3>
                     <p class="text-gray-800 text-lg md:text-xl leading-relaxed">{{ selectedDrug.indication }}</p>
@@ -145,10 +187,10 @@
                 </section>
 
                 <section v-if="selectedDrug.profNote">
-                    <h3 class="text-xl font-bold text-blue-600 mb-3 border-b-2 border-blue-100 pb-2 flex items-center">
+                    <h3 class="text-xl font-bold text-teal-600 mb-3 border-b-2 border-teal-100 pb-2 flex items-center">
                         <i class="fa-solid fa-circle-info mr-3"></i> 用藥須知
                     </h3>
-                    <p class="text-gray-800 text-lg md:text-xl leading-relaxed bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <p class="text-gray-800 text-lg md:text-xl leading-relaxed bg-teal-50 p-4 rounded-xl border border-teal-100">
                         {{ selectedDrug.profNote }}
                     </p>
                 </section>
@@ -156,7 +198,7 @@
             </div>
             
             <div class="p-5 border-t bg-gray-50">
-                <button @click="closeDetail" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl text-center font-bold text-xl shadow-md transition tracking-widest">
+                <button @click="closeDetail" class="w-full bg-fy-blue hover:bg-blue-800 text-white py-4 rounded-xl text-center font-bold text-xl shadow-md transition tracking-widest">
                     關 閉
                 </button>
             </div>
@@ -241,11 +283,9 @@
 
                     if (isDiscontinued) return null;
 
-                    // 2. 新增：若無圖片名稱，直接排除不顯示
+                    const mapData = atcMap[code] || { orderNote: '' };
                     const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
                     if (!imgName) return null;
-
-                    const mapData = atcMap[code] || { orderNote: '' };
 
                     return {
                         code, 
