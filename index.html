@@ -86,7 +86,7 @@
             <p class="text-xl mt-4">資料同步中，請稍候...</p>
         </div>
 
-        <div v-if="!loading && !keyword" class="w-full max-w-4xl mx-auto py-8 px-4 animate-slide-up">
+        <div v-if="!loading && !keyword" class="w-full max-w-[90rem] mx-auto py-8 px-2 md:px-4 animate-slide-up">
             <div class="text-center mb-8">
                 <h2 class="text-2xl md:text-3xl font-bold text-fy-dark-green flex items-center justify-center">
                     <i class="fa-solid fa-bullhorn mr-3 animate-pulse"></i> 最新藥品異動公告
@@ -94,27 +94,24 @@
                 <p class="text-gray-500 mt-2">請注意近期本院藥品外觀或品項之變更</p>
             </div>
 
-            <div class="space-y-8">
-                <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full">
                     
-                    <div class="bg-fy-dark-green text-white p-4 flex justify-between items-center flex-wrap gap-2">
-                        <h3 class="text-xl font-bold tracking-wide">{{ notice.nameAfter }}</h3>
-                        <span class="bg-white text-fy-dark-green px-3 py-1 rounded-full text-sm font-bold shadow-sm">
-                            <i class="fa-regular fa-calendar-check mr-1"></i> {{ notice.date }} 生效
+                    <div class="bg-green-50 px-4 py-2 border-b border-green-100 flex justify-end items-center">
+                        <span class="text-fy-dark-green text-sm font-bold flex items-center">
+                            <i class="fa-regular fa-calendar-check mr-2"></i> {{ notice.date }} 生效
                         </span>
                     </div>
 
-                    <div class="p-6">
-                        <div class="flex flex-col md:flex-row items-stretch justify-center mb-6 gap-4 md:gap-8">
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="flex flex-col md:flex-row items-stretch justify-center mb-6 gap-4 md:gap-6">
                             
-                            <div class="flex-1 w-full flex flex-col items-center">
-                                <span class="bg-gray-100 text-gray-500 px-4 py-1 rounded-full text-sm font-bold mb-3">變更前</span>
-                                
-                                <h4 class="text-lg font-bold text-gray-600 mb-2 text-center h-14 flex items-center justify-center w-full px-2 leading-tight">
+                            <div class="flex-1 w-full flex flex-col">
+                                <div class="bg-gray-500 text-white text-center py-2 px-3 rounded-t-xl font-bold text-base md:text-lg leading-tight min-h-[3.5rem] flex items-center justify-center">
+                                    <span class="text-xs bg-white text-gray-600 px-1 rounded mr-1 flex-shrink-0">異動前</span>
                                     {{ notice.nameBefore }}
-                                </h4>
-
-                                <div class="w-full aspect-[4/3] bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative">
+                                </div>
+                                <div class="w-full aspect-[4/3] bg-gray-50 rounded-b-xl border-2 border-t-0 border-gray-300 border-dashed flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgBefore" :src="notice.imgBefore" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
                                 </div>
@@ -125,22 +122,21 @@
                                 <i class="fa-solid fa-arrow-down text-3xl text-gray-300 md:hidden"></i>
                             </div>
 
-                            <div class="flex-1 w-full flex flex-col items-center">
-                                <span class="bg-green-100 text-fy-dark-green px-4 py-1 rounded-full text-sm font-bold mb-3 border border-green-200">變更後</span>
-                                
-                                <h4 class="text-lg font-bold text-fy-dark-green mb-2 text-center h-14 flex items-center justify-center w-full px-2 leading-tight">
+                            <div class="flex-1 w-full flex flex-col">
+                                <div class="bg-fy-dark-green text-white text-center py-2 px-3 rounded-t-xl font-bold text-base md:text-lg leading-tight min-h-[3.5rem] flex items-center justify-center relative overflow-hidden">
+                                    <span class="text-xs bg-white text-fy-dark-green px-1 rounded mr-1 flex-shrink-0">異動後</span>
                                     {{ notice.nameAfter }}
-                                </h4>
-
-                                <div class="w-full aspect-[4/3] bg-white rounded-xl border-2 border-fy-dark-green shadow-md flex items-center justify-center overflow-hidden relative">
+                                    <div class="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-t-red-500 border-l-[30px] border-l-transparent transform rotate-0"></div>
+                                    <span class="absolute top-0 right-1 text-[0.6rem] font-bold">N</span>
+                                </div>
+                                <div class="w-full aspect-[4/3] bg-white rounded-b-xl border-2 border-t-0 border-fy-dark-green shadow-sm flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgAfter" :src="notice.imgAfter" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
-                                    <div class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">NEW</div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="bg-fy-light-green-bg rounded-xl p-4 md:p-5 border border-green-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-fy-light-green-bg rounded-xl p-4 border border-green-100 grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto">
                             <div>
                                 <span class="text-xs font-bold text-gray-500 block mb-1">成分含量</span>
                                 <p class="text-gray-800 font-medium">{{ notice.content || '未提供' }}</p>
@@ -411,7 +407,9 @@
 
                     return {
                         date,
-                        // 修改：分別存取前後藥名
+                        // 修正 1：生成 sortingKey 供排序使用 (將日期轉為 YYYYMMDD 數字)
+                        sortingKey: parseDateToNumber(date),
+                        
                         nameBefore: beforeDrug ? beforeDrug.tradeName : '查無資料',
                         nameAfter: afterDrug ? afterDrug.tradeName : '查無資料',
                         imgBefore: beforeDrug ? beforeDrug.imgUrl : null,
@@ -421,9 +419,21 @@
                     };
                 }).filter(d => d !== null);
 
-                // 排序：確保日期由新到舊 (descending)
-                processed.sort((a, b) => (a.date < b.date ? 1 : -1));
+                // 修正 1：依照數字大小進行排序，確保 2025/11 在 2025/8 之前
+                processed.sort((a, b) => b.sortingKey - a.sortingKey);
                 notices.value = processed;
+            };
+
+            // 輔助函式：將 "2025/8/29" 轉為 20250829
+            const parseDateToNumber = (dateStr) => {
+                const parts = dateStr.split('/'); // 假設格式為 YYYY/MM/DD
+                if (parts.length < 3) return 0;
+                
+                const y = parts[0];
+                const m = parts[1].padStart(2, '0'); // 補零
+                const d = parts[2].padStart(2, '0'); // 補零
+                
+                return parseInt(y + m + d);
             };
 
             const filteredDrugs = computed(() => {
