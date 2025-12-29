@@ -46,12 +46,18 @@
     <header class="sticky top-0 bg-fy-green p-4 shadow-md z-30">
         <div class="relative flex justify-between items-center mb-4">
             
-            <div class="flex items-center cursor-pointer" @click="resetToHome">
-                <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 mr-3">
+            <div class="flex flex-col items-start z-10">
+                <div class="cursor-pointer" @click="resetToHome">
+                    <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 mr-3">
+                </div>
+                
+                <a href="https://www.fyh.mohw.gov.tw/" target="_blank" class="text-xs md:text-sm font-bold text-gray-700 hover:text-black mt-1 ml-1 transition flex items-center no-underline">
+                    <i class="fa-solid fa-hospital mr-1"></i> 回醫院首頁
+                </a>
             </div>
 
             <h1 
-                class="absolute left-1/2 transform -translate-x-1/2 text-gray-800 text-2xl md:text-3xl font-bold tracking-wider hidden sm:block cursor-pointer whitespace-nowrap"
+                class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-800 text-2xl md:text-3xl font-bold tracking-wider hidden sm:block cursor-pointer whitespace-nowrap"
                 @click="resetToHome"
             >
                 民眾藥品查詢
@@ -315,6 +321,7 @@
 </script>
 </body>
 </html>
+
 
 
 
