@@ -14,11 +14,8 @@
             theme: {
                 extend: {
                     colors: {
-                        // 主題深綠色 (翠綠)
                         'fy-dark-green': '#008542', 
-                        // Header 背景淺綠
                         'fy-green': '#CDE69C', 
-                        // 極淺綠背景 (用於卡片底部、說明框)
                         'fy-light-green-bg': '#f0fdf4', 
                     }
                 }
@@ -28,7 +25,6 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        /* Loader 改為深綠色 */
         .loader { border: 5px solid #f3f3f3; border-top: 5px solid #008542; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         [v-cloak] { display: none; }
@@ -48,7 +44,6 @@
 
     <header class="sticky top-0 bg-fy-green p-4 shadow-md z-30">
         <div class="relative flex justify-between items-center mb-4">
-            
             <div class="flex flex-col items-start z-10">
                 <div class="cursor-pointer" @click="resetToHome">
                     <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 mr-3">
@@ -101,28 +96,42 @@
 
             <div class="space-y-8">
                 <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                    
                     <div class="bg-fy-dark-green text-white p-4 flex justify-between items-center flex-wrap gap-2">
-                        <h3 class="text-xl font-bold tracking-wide">{{ notice.name }}</h3>
+                        <h3 class="text-xl font-bold tracking-wide">{{ notice.nameAfter }}</h3>
                         <span class="bg-white text-fy-dark-green px-3 py-1 rounded-full text-sm font-bold shadow-sm">
                             <i class="fa-regular fa-calendar-check mr-1"></i> {{ notice.date }} 生效
                         </span>
                     </div>
 
                     <div class="p-6">
-                        <div class="flex flex-col md:flex-row items-center justify-center mb-6 gap-4 md:gap-8">
+                        <div class="flex flex-col md:flex-row items-stretch justify-center mb-6 gap-4 md:gap-8">
+                            
                             <div class="flex-1 w-full flex flex-col items-center">
                                 <span class="bg-gray-100 text-gray-500 px-4 py-1 rounded-full text-sm font-bold mb-3">變更前</span>
+                                
+                                <h4 class="text-lg font-bold text-gray-600 mb-2 text-center h-14 flex items-center justify-center w-full px-2 leading-tight">
+                                    {{ notice.nameBefore }}
+                                </h4>
+
                                 <div class="w-full aspect-[4/3] bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgBefore" :src="notice.imgBefore" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
                                 </div>
                             </div>
-                            <div class="flex-shrink-0">
+
+                            <div class="flex-shrink-0 flex items-center justify-center py-2 md:py-0">
                                 <i class="fa-solid fa-arrow-right text-3xl text-gray-300 hidden md:block"></i>
                                 <i class="fa-solid fa-arrow-down text-3xl text-gray-300 md:hidden"></i>
                             </div>
+
                             <div class="flex-1 w-full flex flex-col items-center">
                                 <span class="bg-green-100 text-fy-dark-green px-4 py-1 rounded-full text-sm font-bold mb-3 border border-green-200">變更後</span>
+                                
+                                <h4 class="text-lg font-bold text-fy-dark-green mb-2 text-center h-14 flex items-center justify-center w-full px-2 leading-tight">
+                                    {{ notice.nameAfter }}
+                                </h4>
+
                                 <div class="w-full aspect-[4/3] bg-white rounded-xl border-2 border-fy-dark-green shadow-md flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgAfter" :src="notice.imgAfter" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
@@ -266,7 +275,6 @@
 
     const DRUG_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTl_HoBeP0qBD79IB7Ulp_xAMRX4Gyx65pgU-4Kf15Lu4g4FqGdVBDSn1BEI6sNXht889zjRx6RErb-/pub?output=csv';
     const ATC_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMhr-Ocv4uEN6virOvzsEY-c1-tCEs-e1lB-fvB9d2U2XCtcDaHnLnob_Vu6Ktjce4YErY9y6FuaxD/pub?output=csv';
-    // 新增：藥品異動公告 CSV
     const NOTICE_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvkgeCPqEuhBiCXEEBLGyGZ_6KVPiaodmK0HEd7bEVN2EFGeyF8z32H7U15oheywWzqZOyuy_qdchX/pub?output=csv';
     
     const CLOUDINARY_CLOUD_NAME = 'de02nbokt'; 
@@ -275,7 +283,7 @@
         setup() {
             const keyword = ref('');
             const drugs = ref([]);
-            const notices = ref([]); // 新增：公告資料
+            const notices = ref([]); 
             const selectedDrug = ref(null);
             const loading = ref(true);
             const error = ref('');
@@ -296,7 +304,7 @@
                 Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: (r) => resolve(r.data), error: (e) => reject(e) });
             });
 
-            // 輔助：解析單行資料為藥品物件 (不因停用而過濾)
+            // 輔助函式：將單行 CSV 資料轉換為藥品物件
             const parseRowToDrug = (row, atcMap) => {
                 const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
                 if(!code) return null;
@@ -313,7 +321,6 @@
 
             const fetchAllData = () => {
                 loading.value = true;
-                // 同時抓取三份資料
                 Promise.all([fetchCsv(DRUG_DATA_URL), fetchCsv(ATC_DATA_URL), fetchCsv(NOTICE_DATA_URL)])
                     .then(([drugData, atcData, noticeData]) => {
                         const atcMap = {};
@@ -325,19 +332,16 @@
                             }
                         });
 
-                        // 1. 處理搜尋用藥品列表 (會過濾停用藥)
                         processData(drugData, atcMap);
 
-                        // 2. 建立完整藥品索引 (包含停用藥，供異動公告查圖片用)
+                        // 建立完整索引 (含停用藥)
                         const allDrugsMap = {};
                         drugData.forEach(row => {
                             const drug = parseRowToDrug(row, atcMap);
                             if (drug) allDrugsMap[drug.code] = drug;
                         });
 
-                        // 3. 處理異動公告 (利用代碼去 allDrugsMap 查資料)
                         processNoticeData(noticeData, allDrugsMap);
-
                         loading.value = false;
                     })
                     .catch(err => {
@@ -351,7 +355,6 @@
                 let processed = rawData.map(row => {
                     const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
                     if(!code) return null;
-                    
                     if (code.length !== 6) return null;
                     if (code.startsWith('653')) return null;
 
@@ -360,7 +363,6 @@
 
                     if (tradeName.includes('贈') || genericName.includes('贈')) return null;
                     if (tradeName.includes('(非本院品項)')) return null;
-                    // 修改：排除免費代碼
                     if (tradeName.includes('免費')) return null;
 
                     const status1 = row['門診停用否'] ? row['門診停用否'].trim().toUpperCase() : '';
@@ -378,11 +380,8 @@
                         genericName, tradeName, 
                         indication: row['適應症']||row['臨床用途']||'尚無資料', 
                         sideEffect: row['副作用']||'',
-                        // 修改：抓取「注意事項」
                         profNote: row['注意事項'] ? row['注意事項'].trim() : '', 
-                        // 修改：抓取「藥品外觀」
                         appearance: row['藥品外觀'] ? row['藥品外觀'].trim() : '',
-                        
                         imgUrl: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}`,
                     };
                 }).filter(d => d !== null);
@@ -391,8 +390,10 @@
                 fuse = new Fuse(processed, fuseOptions);
             };
 
-            // 新增：處理公告資料 (代碼查表)
+            // 處理異動公告資料
             const processNoticeData = (data, allDrugsMap) => {
+                if (!data || data.length === 0) return;
+
                 let processed = data.map(row => {
                     const date = row['異動日期'] ? row['異動日期'].trim() : '';
                     if (!date) return null;
@@ -403,14 +404,16 @@
                     const beforeDrug = allDrugsMap[beforeCode] || null;
                     const afterDrug = allDrugsMap[afterCode] || null;
 
+                    // 若找不到任何藥品資訊，略過
                     if (!beforeDrug && !afterDrug) return null;
 
-                    // 優先顯示新藥資訊，若無則顯示舊藥
                     const displayDrug = afterDrug || beforeDrug;
 
                     return {
                         date,
-                        name: displayDrug.tradeName,
+                        // 修改：分別存取前後藥名
+                        nameBefore: beforeDrug ? beforeDrug.tradeName : '查無資料',
+                        nameAfter: afterDrug ? afterDrug.tradeName : '查無資料',
                         imgBefore: beforeDrug ? beforeDrug.imgUrl : null,
                         imgAfter: afterDrug ? afterDrug.imgUrl : null,
                         content: displayDrug.genericName,
@@ -418,15 +421,13 @@
                     };
                 }).filter(d => d !== null);
 
-                // 排序：新日期在前
+                // 排序：確保日期由新到舊 (descending)
                 processed.sort((a, b) => (a.date < b.date ? 1 : -1));
-
                 notices.value = processed;
             };
 
             const filteredDrugs = computed(() => {
                 if (!keyword.value) return [];
-                
                 const k = keyword.value.trim();
                 if (fuse) {
                     const searchResults = fuse.search(k);
