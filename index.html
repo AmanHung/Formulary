@@ -95,7 +95,7 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full">
+                <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-xl transition duration-300">
                     
                     <div class="bg-green-50 px-4 py-2 border-b border-green-100 flex justify-end items-center">
                         <span class="text-fy-dark-green text-sm font-bold flex items-center">
@@ -106,12 +106,16 @@
                     <div class="p-6 flex-1 flex flex-col">
                         <div class="flex flex-col md:flex-row items-stretch justify-center mb-6 gap-4 md:gap-6">
                             
-                            <div class="flex-1 w-full flex flex-col">
-                                <div class="bg-gray-500 text-white text-center py-2 px-3 rounded-t-xl font-bold text-base md:text-lg leading-tight min-h-[3.5rem] flex items-center justify-center">
-                                    <span class="text-xs bg-white text-gray-600 px-1 rounded mr-1 flex-shrink-0">異動前</span>
-                                    {{ notice.nameBefore }}
+                            <div class="flex-1 w-full flex flex-col relative border border-gray-100 rounded-xl p-3 bg-gray-50">
+                                <div class="absolute top-0 left-0 bg-gray-500 text-white text-xs font-bold px-3 py-1 rounded-br-lg rounded-tl-lg shadow-sm z-10">
+                                    異動前
                                 </div>
-                                <div class="w-full aspect-[4/3] bg-gray-50 rounded-b-xl border-2 border-t-0 border-gray-300 border-dashed flex items-center justify-center overflow-hidden relative">
+
+                                <h4 class="text-lg font-bold text-gray-600 mt-6 mb-2 text-center leading-tight">
+                                    {{ notice.nameBefore }}
+                                </h4>
+
+                                <div class="w-full aspect-[4/3] bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgBefore" :src="notice.imgBefore" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
                                 </div>
@@ -122,16 +126,20 @@
                                 <i class="fa-solid fa-arrow-down text-3xl text-gray-300 md:hidden"></i>
                             </div>
 
-                            <div class="flex-1 w-full flex flex-col">
-                                <div class="bg-fy-dark-green text-white text-center py-2 px-3 rounded-t-xl font-bold text-base md:text-lg leading-tight min-h-[3.5rem] flex items-center justify-center relative overflow-hidden">
-                                    <span class="text-xs bg-white text-fy-dark-green px-1 rounded mr-1 flex-shrink-0">異動後</span>
-                                    {{ notice.nameAfter }}
-                                    <div class="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-t-red-500 border-l-[30px] border-l-transparent transform rotate-0"></div>
-                                    <span class="absolute top-0 right-1 text-[0.6rem] font-bold">N</span>
+                            <div class="flex-1 w-full flex flex-col relative border border-green-100 rounded-xl p-3 bg-white shadow-sm ring-1 ring-green-50">
+                                <div class="absolute top-0 left-0 bg-fy-dark-green text-white text-xs font-bold px-3 py-1 rounded-br-lg rounded-tl-lg shadow-sm z-10">
+                                    異動後
                                 </div>
-                                <div class="w-full aspect-[4/3] bg-white rounded-b-xl border-2 border-t-0 border-fy-dark-green shadow-sm flex items-center justify-center overflow-hidden relative">
+
+                                <h4 class="text-lg font-bold text-fy-dark-green mt-6 mb-2 text-center leading-tight">
+                                    {{ notice.nameAfter }}
+                                </h4>
+
+                                <div class="w-full aspect-[4/3] bg-white rounded-lg border border-green-200 flex items-center justify-center overflow-hidden relative">
                                     <img v-if="notice.imgAfter" :src="notice.imgAfter" class="w-full h-full object-contain p-2" @error="imageLoadError">
                                     <span v-else class="text-gray-400 text-sm">無圖片</span>
+                                    <div class="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-t-red-500 border-l-[30px] border-l-transparent transform rotate-0"></div>
+                                    <span class="absolute top-0 right-1 text-[0.6rem] text-white font-bold">N</span>
                                 </div>
                             </div>
                         </div>
@@ -150,9 +158,12 @@
                 </div>
             </div>
 
-            <div v-if="notices.length === 0" class="text-center py-10 text-gray-400">
-                <i class="fa-solid fa-check-circle text-5xl mb-3 text-green-100"></i>
-                <p>目前無最新的藥品異動公告</p>
+            <div v-if="notices.length === 0" class="text-center py-20 text-gray-400">
+                <div class="bg-green-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-check text-5xl text-fy-dark-green"></i>
+                </div>
+                <p class="text-xl font-bold text-gray-600">目前無最新的藥品異動公告</p>
+                <p class="text-sm mt-2 text-gray-400">(僅顯示近六個月內的異動資訊)</p>
             </div>
         </div>
 
@@ -386,13 +397,28 @@
                 fuse = new Fuse(processed, fuseOptions);
             };
 
-            // 處理異動公告資料
+            // 處理異動公告資料 (含日期過濾)
             const processNoticeData = (data, allDrugsMap) => {
                 if (!data || data.length === 0) return;
 
+                // 1. 計算六個月前的日期
+                const now = new Date();
+                const sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(now.getMonth() - 6);
+
                 let processed = data.map(row => {
-                    const date = row['異動日期'] ? row['異動日期'].trim() : '';
-                    if (!date) return null;
+                    const dateStr = row['異動日期'] ? row['異動日期'].trim() : '';
+                    if (!dateStr) return null;
+
+                    // 解析日期字串 (假設格式為 YYYY/MM/DD)
+                    const dateParts = dateStr.split('/');
+                    if (dateParts.length < 3) return null;
+                    
+                    // 建立 Date 物件進行比對 (注意月份從 0 開始)
+                    const noticeDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+
+                    // 2. 過濾超過六個月的資料
+                    if (noticeDate < sixMonthsAgo) return null;
 
                     const beforeCode = row['異動前'] ? row['異動前'].trim() : '';
                     const afterCode = row['異動後'] ? row['異動後'].trim() : '';
@@ -400,15 +426,14 @@
                     const beforeDrug = allDrugsMap[beforeCode] || null;
                     const afterDrug = allDrugsMap[afterCode] || null;
 
-                    // 若找不到任何藥品資訊，略過
                     if (!beforeDrug && !afterDrug) return null;
 
                     const displayDrug = afterDrug || beforeDrug;
 
                     return {
-                        date,
-                        // 修正 1：生成 sortingKey 供排序使用 (將日期轉為 YYYYMMDD 數字)
-                        sortingKey: parseDateToNumber(date),
+                        date: dateStr,
+                        // 生成 sortingKey (YYYYMMDD) 供排序
+                        sortingKey: parseDateToNumber(dateStr),
                         
                         nameBefore: beforeDrug ? beforeDrug.tradeName : '查無資料',
                         nameAfter: afterDrug ? afterDrug.tradeName : '查無資料',
@@ -419,19 +444,19 @@
                     };
                 }).filter(d => d !== null);
 
-                // 修正 1：依照數字大小進行排序，確保 2025/11 在 2025/8 之前
+                // 排序：確保日期由新到舊
                 processed.sort((a, b) => b.sortingKey - a.sortingKey);
                 notices.value = processed;
             };
 
             // 輔助函式：將 "2025/8/29" 轉為 20250829
             const parseDateToNumber = (dateStr) => {
-                const parts = dateStr.split('/'); // 假設格式為 YYYY/MM/DD
+                const parts = dateStr.split('/'); 
                 if (parts.length < 3) return 0;
                 
                 const y = parts[0];
-                const m = parts[1].padStart(2, '0'); // 補零
-                const d = parts[2].padStart(2, '0'); // 補零
+                const m = parts[1].padStart(2, '0'); 
+                const d = parts[2].padStart(2, '0'); 
                 
                 return parseInt(y + m + d);
             };
