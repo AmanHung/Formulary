@@ -35,7 +35,7 @@
 </head>
 <body>
 
-<div id="app" v-cloak class="w-full max-w-7xl mx-auto bg-white min-h-screen relative flex flex-col shadow-2xl border-t-8 border-fy-green">
+<div id="app" v-cloak class="w-full bg-white min-h-screen relative flex flex-col border-t-8 border-fy-green">
 
     <div v-if="error" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-xl shadow-lg">
         <p class="font-bold text-lg"><i class="fa-solid fa-triangle-exclamation mr-2"></i> 系統訊息</p>
@@ -43,13 +43,18 @@
         <button @click="error = ''" class="mt-3 text-sm bg-white border border-red-300 px-4 py-2 rounded-lg">關閉</button>
     </div>
 
-    <header class="sticky top-0 bg-fy-blue p-5 shadow-md z-30">
-        <div class="flex justify-between items-center mb-5">
-            <h1 class="text-white text-2xl md:text-3xl font-bold flex items-center cursor-pointer tracking-wider" @click="resetToHome">
-                <i class="fa-solid fa-puzzle-piece mr-3"></i> 藥品查詢
-            </h1>
-            <button v-if="keyword" @click="resetToHome" class="text-base bg-white text-fy-blue hover:bg-gray-100 px-5 py-2 rounded-full transition shadow font-bold">
-                <i class="fa-solid fa-rotate-left mr-1"></i> 重新搜尋
+    <header class="sticky top-0 bg-fy-green p-4 shadow-md z-30">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center cursor-pointer" @click="resetToHome">
+                <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 bg-white rounded-lg p-1 mr-3 shadow-sm">
+                
+                <h1 class="text-white text-2xl md:text-3xl font-bold tracking-wider hidden sm:block">
+                    民眾藥品查詢
+                </h1>
+            </div>
+
+            <button v-if="keyword" @click="resetToHome" class="text-sm md:text-base bg-white text-fy-green hover:bg-gray-100 px-4 py-2 rounded-full transition shadow font-bold flex items-center whitespace-nowrap">
+                <i class="fa-solid fa-rotate-left mr-1 md:mr-2"></i> 重新搜尋
             </button>
         </div>
 
@@ -58,11 +63,11 @@
                 v-model="keyword" 
                 type="text" 
                 placeholder="請輸入藥名、適應症 (例如：頭痛、胃痛)..." 
-                class="w-full pl-6 pr-14 py-4 rounded-full border-2 border-blue-200 focus:border-fy-blue focus:ring-4 focus:ring-blue-100 outline-none shadow-lg text-gray-800 text-xl placeholder:text-gray-400"
+                class="w-full pl-6 pr-14 py-3 md:py-4 rounded-full border-2 border-green-200 focus:border-fy-green focus:ring-4 focus:ring-green-100 outline-none shadow-lg text-gray-800 text-lg md:text-xl placeholder:text-gray-400"
             >
-            <button class="absolute right-2 top-2 bottom-2 bg-fy-btn-blue hover:bg-blue-700 text-white rounded-full w-12 flex items-center justify-center transition" @click="keyword && (keyword='')">
-                <i v-if="!keyword" class="fa-solid fa-magnifying-glass text-xl"></i>
-                <i v-else class="fa-solid fa-xmark text-xl"></i>
+            <button class="absolute right-2 top-2 bottom-2 bg-fy-btn-blue hover:bg-blue-700 text-white rounded-full w-10 md:w-12 flex items-center justify-center transition" @click="keyword && (keyword='')">
+                <i v-if="!keyword" class="fa-solid fa-magnifying-glass text-lg md:text-xl"></i>
+                <i v-else class="fa-solid fa-xmark text-lg md:text-xl"></i>
             </button>
         </div>
     </header>
@@ -306,6 +311,7 @@
 </script>
 </body>
 </html>
+
 
 
 
