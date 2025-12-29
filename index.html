@@ -165,6 +165,15 @@
                     </div>
                 </div>
 
+                <div v-if="selectedDrug.appearance" class="bg-fy-light-green-bg rounded-xl p-4 flex items-start border border-green-100 shadow-sm">
+                    <div class="flex-shrink-0 mr-3 mt-1">
+                        <i class="fa-solid fa-eye text-fy-dark-green text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-sm font-bold text-fy-dark-green block mb-1">藥品外觀</span>
+                        <p class="text-gray-800 text-base leading-relaxed">{{ selectedDrug.appearance }}</p>
+                    </div>
+                </div>
                 <section>
                     <h3 class="text-xl font-bold text-fy-dark-green mb-3 border-b-2 border-green-100 pb-2 flex items-center">
                         <i class="fa-solid fa-stethoscope mr-3"></i> 適應症 (用途)
@@ -286,6 +295,7 @@
                         indication: row['適應症']||row['臨床用途']||'尚無資料', 
                         sideEffect: row['副作用']||'',
                         profNote: row['注意事項'] ? row['注意事項'].trim() : '',
+                        appearance: row['藥品外觀'] ? row['藥品外觀'].trim() : '',
                         
                         imgUrl: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}`,
                     };
@@ -322,6 +332,7 @@
 </script>
 </body>
 </html>
+
 
 
 
