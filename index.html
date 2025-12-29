@@ -250,6 +250,8 @@
                     
                     // 新增：排除「(非本院品項)」的藥品
                     if (tradeName.includes('(非本院品項)')) return null;
+                    // 新增：排除藥名中含有「免費」的特殊帳務代碼
+                    if (tradeName.includes('免費')) return null;
 
                     // 1. 判斷是否停用 (民眾版不顯示停用藥品)
                     const status1 = row['門診停用否'] ? row['門診停用否'].trim().toUpperCase() : '';
@@ -304,6 +306,7 @@
 </script>
 </body>
 </html>
+
 
 
 
