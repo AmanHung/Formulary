@@ -44,16 +44,20 @@
     </div>
 
     <header class="sticky top-0 bg-fy-green p-4 shadow-md z-30">
-        <div class="flex justify-between items-center mb-4">
+        <div class="relative flex justify-between items-center mb-4">
+            
             <div class="flex items-center cursor-pointer" @click="resetToHome">
                 <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 mr-3">
-                
-                <h1 class="text-white text-2xl md:text-3xl font-bold tracking-wider hidden sm:block">
-                    民眾藥品查詢
-                </h1>
             </div>
 
-            <button v-if="keyword" @click="resetToHome" class="text-sm md:text-base bg-white text-fy-green hover:bg-gray-100 px-4 py-2 rounded-full transition shadow font-bold flex items-center whitespace-nowrap">
+            <h1 
+                class="absolute left-1/2 transform -translate-x-1/2 text-white text-2xl md:text-3xl font-bold tracking-wider hidden sm:block cursor-pointer whitespace-nowrap"
+                @click="resetToHome"
+            >
+                民眾藥品查詢
+            </h1>
+
+            <button v-if="keyword" @click="resetToHome" class="text-sm md:text-base bg-white text-fy-green hover:bg-gray-100 px-4 py-2 rounded-full transition shadow font-bold flex items-center whitespace-nowrap z-10">
                 <i class="fa-solid fa-rotate-left mr-1 md:mr-2"></i> 重新搜尋
             </button>
         </div>
@@ -311,6 +315,7 @@
 </script>
 </body>
 </html>
+
 
 
 
