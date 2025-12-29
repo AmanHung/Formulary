@@ -106,11 +106,11 @@
                                 <img v-if="drug.imgUrl" :src="drug.imgUrl" class="w-full h-full object-cover" loading="lazy" @error="imageLoadError">
                                 <i v-else class="fa-solid fa-image text-gray-300 text-4xl"></i>
                             </div>
-                            <div class="flex-1 min-w-0 py-1">
+                           <div class="flex-1 min-w-0 py-1">
                                 <h3 class="font-bold text-xl md:text-2xl leading-tight mb-2 text-fy-blue break-words group-hover:text-blue-600">
                                     {{ drug.tradeName }}
                                 </h3>
-                                <p class="text-gray-500 text-base font-medium">{{ drug.genericName }}</p>
+                                <p class="text-gray-500 text-base font-medium line-clamp-2">{{ drug.genericName }}</p>
                             </div>
                         </div>
                         
@@ -304,5 +304,6 @@
 </script>
 </body>
 </html>
+
 
 
