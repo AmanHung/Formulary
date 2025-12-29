@@ -267,7 +267,7 @@
                         genericName, tradeName, 
                         indication: row['適應症']||row['臨床用途']||'尚無資料', 
                         sideEffect: row['副作用']||'',
-                        profNote: row['醫護用藥須知'] ? row['醫護用藥須知'].trim() : '', 
+                        profNote: row['注意事項'] ? row['注意事項'].trim() : '',m() : '', 
                         
                         imgUrl: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}`,
                     };
@@ -304,3 +304,4 @@
 </script>
 </body>
 </html>
+
