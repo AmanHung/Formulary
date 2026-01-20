@@ -2,290 +2,226 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>衛生福利部豐原醫院 - 民眾藥品查詢</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>藥劑科 - 藥品異動通知 | Drug Changes Notification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'fy-dark-green': '#008542', 
-                        'fy-green': '#CDE69C', 
-                        'fy-light-green-bg': '#f0fdf4', 
-                    }
-                }
-            }
-        }
-    </script>
+    
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #008542; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { 
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif; 
+            background-color: #f8f9fa; 
+        }
+
+        /* 讀取動畫 */
+        .loader-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 60vh;
+            color: #6c757d;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+
+        /* 卡片風格 */
+        .card { 
+            border: none; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08); 
+            margin-bottom: 24px; 
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+        }
+        
+        /* 異動卡片專用樣式 */
+        .change-card { border: 1px solid #dee2e6; }
+        .change-card.border-danger { border-color: #ffcccc !important; }
+        
+        .card-header { font-weight: bold; }
+        .bg-danger { background-color: #dc3545 !important; }
+        
+        /* 圖片容器與標籤 */
+        .img-wrapper {
+            position: relative;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .img-wrapper.new-item {
+            border: 2px solid #198754;
+            background-color: #f8fff9;
+        }
+        .img-wrapper img {
+            max-height: 160px;
+            object-fit: contain;
+            width: 100%;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 文字樣式 */
+        .text-old { text-decoration: line-through; color: #999; font-size: 0.9rem; margin-top: 8px; }
+        .text-new { color: #198754; font-weight: bold; font-size: 0.95rem; margin-top: 8px; }
+
+        /* RWD */
+        .arrow-col { display: flex; align-items: center; justify-content: center; }
+        @media (max-width: 768px) {
+            .arrow-col i { transform: rotate(90deg); margin: 15px 0; }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         [v-cloak] { display: none; }
-        .animate-slide-up { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-<div id="app" v-cloak class="w-full bg-white min-h-screen relative flex flex-col border-t-8 border-fy-dark-green">
-
-    <div v-if="error" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-xl shadow-lg">
-        <p class="font-bold text-lg"><i class="fa-solid fa-triangle-exclamation mr-2"></i> 系統訊息</p>
-        <p class="text-base">{{ error }}</p>
-        <button @click="error = ''" class="mt-3 text-sm bg-white border border-red-300 px-4 py-2 rounded-lg">關閉</button>
-    </div>
-
-    <header class="sticky top-0 bg-fy-green p-4 shadow-md z-30">
-        <div class="relative flex justify-between items-center mb-4">
-            <div class="flex flex-col items-start z-10">
-                <div class="cursor-pointer" @click="resetToHome">
-                    <img src="logo_left.png" alt="衛生福利部豐原醫院" class="h-10 md:h-14 mr-3">
+<div id="app" v-cloak>
+    
+    <nav class="navbar navbar-dark bg-dark shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="fa-solid fa-right-left me-3"></i>
+                <div class="d-flex flex-col flex-md-row align-items-baseline">
+                    <span class="fs-4 fw-bold me-2">藥品異動通知</span>
+                    <span class="fs-6 text-white-50">Pharmacy Intranet</span>
                 </div>
-                <a href="https://www.fyh.mohw.gov.tw/" target="_blank" class="text-sm md:text-base font-bold text-fy-dark-green hover:text-black mt-1 ml-1 transition flex items-center no-underline">
-                    <i class="fa-solid fa-hospital mr-1"></i> 回醫院首頁
-                </a>
+            </a>
+            <div class="d-flex">
+                <input v-model="searchKeyword" class="form-control form-control-sm me-2" type="search" placeholder="搜尋藥名..." aria-label="Search">
             </div>
-
-            <h1 
-                class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 text-gray-800 text-3xl md:text-4xl font-bold tracking-wider hidden sm:block cursor-pointer whitespace-nowrap"
-                @click="resetToHome"
-            >
-                民眾藥品查詢
-            </h1>
-
-            <button v-if="keyword" @click="resetToHome" class="text-base md:text-lg bg-white text-fy-dark-green hover:bg-gray-100 px-5 py-2 rounded-full transition shadow font-bold flex items-center whitespace-nowrap z-10">
-                <i class="fa-solid fa-rotate-left mr-1 md:mr-2"></i> 重新搜尋
-            </button>
         </div>
+    </nav>
 
-        <div class="relative max-w-4xl mx-auto">
-            <input 
-                v-model="keyword" 
-                type="text" 
-                placeholder="請輸入藥名、適應症 (例如：頭痛、胃痛)..." 
-                class="w-full pl-6 pr-14 py-3 md:py-4 rounded-full border-2 border-green-200 focus:border-fy-dark-green focus:ring-4 focus:ring-green-200 outline-none shadow-lg text-gray-800 text-xl md:text-2xl placeholder:text-gray-400"
-            >
-            <button class="absolute right-2 top-2 bottom-2 bg-fy-dark-green hover:bg-green-800 text-white rounded-full w-10 md:w-12 flex items-center justify-center transition" @click="keyword && (keyword='')">
-                <i v-if="!keyword" class="fa-solid fa-magnifying-glass text-xl md:text-2xl"></i>
-                <i v-else class="fa-solid fa-xmark text-xl md:text-2xl"></i>
-            </button>
-        </div>
-    </header>
-
-    <main class="flex-1 p-4 md:p-8 bg-white overflow-y-auto">
+    <div class="container py-4">
         
-        <div v-if="loading" class="text-center py-32 text-gray-500">
-            <div class="loader"></div>
-            <p class="text-2xl mt-4">資料同步中，請稍候...</p>
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+            <h2 class="h4 text-secondary mb-0"><i class="fa-solid fa-bullhorn me-2"></i>最新公告列表</h2>
+            <span class="badge bg-secondary">{{ filteredNotices.length }} 筆資料</span>
         </div>
 
-        <div v-if="!loading && !keyword" class="w-full max-w-[90rem] mx-auto py-8 px-2 md:px-4 animate-slide-up">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-fy-dark-green flex items-center justify-center">
-                    <i class="fa-solid fa-bullhorn mr-3 animate-pulse"></i> 最新藥品異動公告
-                </h2>
-                <p class="text-gray-500 mt-2 text-lg">請注意近期本院藥品外觀或品項之變更</p>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                <div v-for="(notice, index) in notices" :key="index" class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col h-full hover:shadow-xl transition duration-300">
-                    
-                    <div class="bg-green-50 px-4 py-2 border-b border-green-100 flex justify-end items-center">
-                        <span class="text-fy-dark-green text-base font-bold flex items-center">
-                            <i class="fa-regular fa-calendar-check mr-2"></i> {{ notice.date }} 生效
-                        </span>
-                    </div>
-
-                    <div class="p-6 flex-1 flex flex-col">
-                        <div class="flex flex-col md:flex-row items-stretch justify-center mb-6 gap-4 md:gap-6">
-                            
-                            <div class="flex-1 w-full flex flex-col relative border border-gray-100 rounded-xl p-3 bg-gray-50">
-                                <div class="absolute top-0 left-0 bg-gray-500 text-white text-sm font-bold px-3 py-1 rounded-br-lg rounded-tl-lg shadow-sm z-10">
-                                    異動前
-                                </div>
-
-                                <h4 class="text-xl font-bold text-gray-600 mt-8 mb-2 text-center leading-tight">
-                                    {{ notice.nameBefore }}
-                                </h4>
-
-                                <div class="w-full aspect-[4/3] bg-white rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden relative">
-                                    <img v-if="notice.imgBefore" :src="notice.imgBefore" class="w-full h-full object-contain p-2" @error="imageLoadError">
-                                    <span v-else class="text-gray-400 text-base">無圖片</span>
-                                </div>
-                                
-                                <div v-if="notice.appearanceBefore" class="mt-2 text-center">
-                                    <p class="text-gray-500 text-base bg-white border border-gray-200 rounded-lg py-1 px-2 inline-block">
-                                        <i class="fa-solid fa-eye mr-1 text-gray-400"></i> {{ notice.appearanceBefore }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div class="flex-shrink-0 flex items-center justify-center py-2 md:py-0">
-                                <i class="fa-solid fa-arrow-right text-4xl text-gray-300 hidden md:block"></i>
-                                <i class="fa-solid fa-arrow-down text-4xl text-gray-300 md:hidden"></i>
-                            </div>
-
-                            <div class="flex-1 w-full flex flex-col relative border border-green-100 rounded-xl p-3 bg-white shadow-sm ring-1 ring-green-50">
-                                <div class="absolute top-0 left-0 bg-fy-dark-green text-white text-sm font-bold px-3 py-1 rounded-br-lg rounded-tl-lg shadow-sm z-10">
-                                    異動後
-                                </div>
-
-                                <h4 class="text-xl font-bold text-fy-dark-green mt-8 mb-2 text-center leading-tight">
-                                    {{ notice.nameAfter }}
-                                </h4>
-
-                                <div class="w-full aspect-[4/3] bg-white rounded-lg border border-green-200 flex items-center justify-center overflow-hidden relative">
-                                    <img v-if="notice.imgAfter" :src="notice.imgAfter" class="w-full h-full object-contain p-2" @error="imageLoadError">
-                                    <span v-else class="text-gray-400 text-base">無圖片</span>
-                                    <div class="absolute top-0 right-0 w-0 h-0 border-t-[36px] border-t-red-500 border-l-[36px] border-l-transparent transform rotate-0"></div>
-                                    <span class="absolute top-0 right-1 text-xs text-white font-bold">N</span>
-                                </div>
-
-                                <div v-if="notice.appearanceAfter" class="mt-2 text-center">
-                                    <p class="text-fy-dark-green text-base bg-green-50 border border-green-100 rounded-lg py-1 px-2 inline-block font-medium">
-                                        <i class="fa-solid fa-eye mr-1 text-fy-dark-green"></i> {{ notice.appearanceAfter }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-fy-light-green-bg rounded-xl p-4 border border-green-100 grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto">
-                            <div>
-                                <span class="text-sm font-bold text-gray-500 block mb-1">成分含量</span>
-                                <p class="text-gray-800 text-lg font-medium">{{ notice.content || '未提供' }}</p>
-                            </div>
-                            <div>
-                                <span class="text-sm font-bold text-gray-500 block mb-1">適應症</span>
-                                <p class="text-gray-800 text-lg font-medium">{{ notice.indication || '未提供' }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div v-if="notices.length === 0" class="text-center py-20 text-gray-400">
-                <div class="bg-green-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fa-solid fa-check text-5xl text-fy-dark-green"></i>
-                </div>
-                <p class="text-2xl font-bold text-gray-600">目前無最新的藥品異動公告</p>
-                <p class="text-base mt-2 text-gray-400">(僅顯示近六個月內的異動資訊)</p>
-            </div>
+        <div v-if="error" class="alert alert-danger shadow-sm" role="alert">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
         </div>
 
-        <div v-if="!loading && keyword" class="animate-slide-up">
-            <div v-if="filteredDrugs.length === 0" class="text-center py-32 text-gray-400">
-                <i class="fa-regular fa-folder-open text-7xl mb-4 text-gray-300"></i>
-                <p class="text-3xl">找不到符合「{{ keyword }}」的藥品</p>
-            </div>
+        <div v-if="loading" class="loader-container">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 fs-5">正在同步雲端資料庫...</p>
+        </div>
 
-            <div v-else>
-                <div class="flex items-center mb-6 px-1">
-                    <span class="bg-fy-dark-green w-2 h-8 mr-3 rounded"></span>
-                    <p class="text-gray-700 font-bold text-2xl">搜尋結果：共 {{ filteredDrugs.length }} 筆</p>
+        <div v-if="!loading && filteredNotices.length === 0" class="text-center py-5 text-muted">
+            <i class="fa-regular fa-folder-open fa-4x mb-3"></i>
+            <h4>目前無符合條件的異動公告</h4>
+            <p>請嘗試其他關鍵字或稍後再試</p>
+        </div>
+
+        <div v-if="!loading" class="animate-fade-in">
+            <div 
+                v-for="(item, index) in filteredNotices" 
+                :key="index" 
+                class="card change-card border-danger mb-4"
+            >
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>異動通知
+                    </span>
+                    <span class="badge bg-white text-danger">
+                        <i class="fa-regular fa-calendar-check me-1"></i> {{ item.date }} 生效
+                    </span>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div 
-                        v-for="drug in filteredDrugs" 
-                        :key="drug.code" 
-                        @click="openDetail(drug)"
-                        class="bg-white rounded-2xl p-5 card-shadow border border-gray-200 hover:border-fy-dark-green hover:shadow-xl active:bg-green-50 transition-all cursor-pointer flex flex-col h-full group"
-                    >
-                        <div class="flex items-start mb-4">
-                            <div class="w-28 h-28 bg-gray-50 rounded-xl flex-shrink-0 mr-5 overflow-hidden border border-gray-200 flex items-center justify-center group-hover:border-green-300 transition">
-                                <img v-if="drug.imgUrl" :src="drug.imgUrl" class="w-full h-full object-cover" loading="lazy" @error="imageLoadError">
-                                <i v-else class="fa-solid fa-image text-gray-300 text-5xl"></i>
-                            </div>
-                            <div class="flex-1 min-w-0 py-1">
-                                <h3 class="font-bold text-2xl md:text-3xl leading-tight mb-2 text-fy-dark-green break-words group-hover:text-green-700">
-                                    {{ drug.tradeName }}
-                                </h3>
-                                <p class="text-gray-500 text-lg font-medium line-clamp-2">{{ drug.genericName }}</p>
-                            </div>
-                        </div>
+
+                <div class="card-body">
+                    <h4 class="card-title fw-bold text-dark mb-1">{{ item.nameAfter }}</h4> 
+                    <p class="text-secondary fst-italic mb-3">{{ item.content }} ({{ item.indication }})</p>
+
+                    <div class="row align-items-stretch mt-3 g-3">
                         
-                        <div class="mt-auto bg-fy-light-green-bg p-5 rounded-xl border border-green-100">
-                            <span class="text-base font-bold text-gray-500 block mb-1">適應症 (用途)</span>
-                            <p class="text-gray-800 text-lg md:text-xl line-clamp-2">{{ drug.indication }}</p>
+                        <div class="col-md-5">
+                            <div class="img-wrapper bg-light">
+                                <span class="status-badge bg-secondary text-white">OLD</span>
+                                <img 
+                                    v-if="item.imgBefore" 
+                                    :src="item.imgBefore" 
+                                    class="img-fluid rounded" 
+                                    @error="imageLoadError"
+                                    alt="舊外觀"
+                                >
+                                <div v-else class="text-muted py-4"><i class="fa-solid fa-image-slash fa-2x mb-2"></i><br>無圖片</div>
+                                
+                                <div class="text-old text-center">
+                                    <div class="fw-bold">{{ item.nameBefore }}</div>
+                                    <small v-if="item.appearanceBefore">{{ item.appearanceBefore }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2 arrow-col">
+                            <i class="fa-solid fa-arrow-right fa-2x text-muted opacity-50"></i>
+                        </div>
+
+                        <div class="col-md-5">
+                            <div class="img-wrapper new-item">
+                                <span class="status-badge bg-success text-white">NEW</span>
+                                <img 
+                                    v-if="item.imgAfter" 
+                                    :src="item.imgAfter" 
+                                    class="img-fluid rounded" 
+                                    @error="imageLoadError"
+                                    alt="新外觀"
+                                >
+                                <div v-else class="text-muted py-4"><i class="fa-solid fa-image-slash fa-2x mb-2"></i><br>無圖片</div>
+                                
+                                <div class="text-new text-center">
+                                    <div class="fw-bold">{{ item.nameAfter }}</div>
+                                    <small v-if="item.appearanceAfter">{{ item.appearanceAfter }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> 
+                    
+                    <div class="alert alert-warning mt-4 mb-0 d-flex align-items-center small" role="alert">
+                        <i class="fa-solid fa-circle-info me-2 fa-lg"></i>
+                        <div>
+                            <strong>藥師提醒：</strong> 
+                            請注意藥品外觀改變，核對藥名與劑量是否正確。
+                            <span v-if="item.nameBefore !== item.nameAfter">商品名已變更。</span>
                         </div>
                     </div>
-                </div>
+
+                </div> 
             </div>
         </div>
-    </main>
 
-    <div v-if="selectedDrug" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-md p-4" @click.self="closeDetail">
-        <div class="bg-white w-full max-w-3xl rounded-2xl flex flex-col overflow-hidden shadow-2xl animate-slide-up max-h-[90vh] border-t-8 border-fy-dark-green">
-            
-            <div class="flex justify-between items-start p-6 border-b bg-gray-50">
-                <div class="flex-1 pr-4">
-                    <h2 class="font-bold text-3xl md:text-4xl text-gray-800 leading-tight">{{ selectedDrug.tradeName }}</h2>
-                    <p class="text-gray-500 text-xl mt-2 font-medium">{{ selectedDrug.genericName }}</p>
-                </div>
-                <button @click="closeDetail" class="w-14 h-14 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 transition flex-shrink-0">
-                    <i class="fa-solid fa-times text-3xl"></i>
-                </button>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-6 space-y-8">
-                
-                <div class="w-full bg-white rounded-2xl border flex items-center justify-center overflow-hidden relative shadow-sm min-h-[300px]">
-                    <img v-if="selectedDrug.imgUrl" :src="selectedDrug.imgUrl" class="max-h-80 object-contain" @error="imageLoadError">
-                    <div v-else class="text-gray-400 py-20 flex flex-col items-center">
-                        <i class="fa-solid fa-image text-7xl mb-4"></i>
-                        <span class="text-xl">暫無圖片</span>
-                    </div>
-                </div>
-
-                <div v-if="selectedDrug.appearance" class="bg-fy-light-green-bg rounded-xl p-5 flex items-start border border-green-100 shadow-sm">
-                    <div class="flex-shrink-0 mr-4 mt-1">
-                        <i class="fa-solid fa-eye text-fy-dark-green text-2xl"></i>
-                    </div>
-                    <div>
-                        <span class="text-base font-bold text-fy-dark-green block mb-1">藥品外觀</span>
-                        <p class="text-gray-800 text-lg leading-relaxed">{{ selectedDrug.appearance }}</p>
-                    </div>
-                </div>
-
-                <section>
-                    <h3 class="text-2xl font-bold text-fy-dark-green mb-3 border-b-2 border-green-100 pb-2 flex items-center">
-                        <i class="fa-solid fa-stethoscope mr-3"></i> 適應症 (用途)
-                    </h3>
-                    <p class="text-gray-800 text-xl md:text-2xl leading-relaxed">{{ selectedDrug.indication }}</p>
-                </section>
-
-                <section v-if="selectedDrug.sideEffect">
-                    <h3 class="text-2xl font-bold text-orange-600 mb-3 border-b-2 border-orange-100 pb-2 flex items-center">
-                        <i class="fa-solid fa-notes-medical mr-3"></i> 可能副作用
-                    </h3>
-                    <p class="text-gray-800 text-xl md:text-2xl leading-relaxed">{{ selectedDrug.sideEffect }}</p>
-                </section>
-
-                <section v-if="selectedDrug.profNote">
-                    <h3 class="text-2xl font-bold text-fy-dark-green mb-3 border-b-2 border-green-100 pb-2 flex items-center">
-                        <i class="fa-solid fa-circle-info mr-3"></i> 用藥須知 (注意事項)
-                    </h3>
-                    <p class="text-gray-800 text-xl md:text-2xl leading-relaxed bg-green-50 p-5 rounded-xl border border-green-100">
-                        {{ selectedDrug.profNote }}
-                    </p>
-                </section>
-
-            </div>
-            
-            <div class="p-6 border-t bg-gray-50">
-                <button @click="closeDetail" class="w-full bg-fy-dark-green hover:bg-green-800 text-white py-4 rounded-xl text-center font-bold text-2xl shadow-md transition tracking-widest">
-                    關 閉
-                </button>
-            </div>
-        </div>
     </div>
+
+    <footer class="bg-dark text-white-50 text-center py-3 mt-5">
+        <small>&copy; 衛生福利部豐原醫院 藥劑科 | 資料來源：Google Sheets Cloud Database</small>
+    </footer>
 
 </div>
 
@@ -293,38 +229,29 @@
     const { createApp, ref, computed, onMounted } = Vue;
 
     const DRUG_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTl_HoBeP0qBD79IB7Ulp_xAMRX4Gyx65pgU-4Kf15Lu4g4FqGdVBDSn1BEI6sNXht889zjRx6RErb-/pub?output=csv';
-    const ATC_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSMhr-Ocv4uEN6virOvzsEY-c1-tCEs-e1lB-fvB9d2U2XCtcDaHnLnob_Vu6Ktjce4YErY9y6FuaxD/pub?output=csv';
     const NOTICE_DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvkgeCPqEuhBiCXEEBLGyGZ_6KVPiaodmK0HEd7bEVN2EFGeyF8z32H7U15oheywWzqZOyuy_qdchX/pub?output=csv';
-    
     const CLOUDINARY_CLOUD_NAME = 'de02nbokt'; 
 
     createApp({
         setup() {
-            const keyword = ref('');
-            const drugs = ref([]);
-            const notices = ref([]); 
-            const selectedDrug = ref(null);
+            const notices = ref([]);
             const loading = ref(true);
             const error = ref('');
-
-            let fuse = null;
-            const fuseOptions = {
-                keys: [
-                    { name: 'tradeName', weight: 0.4 },
-                    { name: 'genericName', weight: 0.3 },
-                    { name: 'indication', weight: 0.3 }
-                ],
-                threshold: 0.3,       
-                ignoreLocation: true,
-                useExtendedSearch: true
-            };
+            const searchKeyword = ref('');
 
             const fetchCsv = (url) => new Promise((resolve, reject) => {
-                Papa.parse(url, { download: true, header: true, skipEmptyLines: true, complete: (r) => resolve(r.data), error: (e) => reject(e) });
+                Papa.parse(url, { 
+                    download: true, 
+                    header: true, 
+                    skipEmptyLines: true, 
+                    complete: (r) => resolve(r.data), 
+                    error: (e) => reject(e) 
+                });
             });
 
-            // 修改：解析時讀取藥品外觀欄位
-            const parseRowToDrug = (row, atcMap) => {
+            const parseRowToDrug = (row) => {
+                // 這裡的邏輯必須非常寬鬆，因為我們需要建立一個包含「所有歷史藥品」的索引
+                // 即使該藥品已停用或不符合顯示規範，為了顯示歷史公告，我們仍需要它的資料
                 const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
                 if(!code) return null;
                 const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
@@ -335,29 +262,21 @@
                     tradeName: row['商品名(英文)'] || row['商品名'] || '無商品名',
                     indication: row['適應症']||row['臨床用途']||'尚無資料',
                     imgUrl: imgName ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}` : null,
-                    // 新增外觀欄位
                     appearance: row['藥品外觀'] ? row['藥品外觀'].trim() : ''
                 };
             };
 
             const fetchAllData = () => {
                 loading.value = true;
-                Promise.all([fetchCsv(DRUG_DATA_URL), fetchCsv(ATC_DATA_URL), fetchCsv(NOTICE_DATA_URL)])
-                    .then(([drugData, atcData, noticeData]) => {
-                        const atcMap = {};
-                        atcData.forEach(row => {
-                            if(row['藥品代碼']) {
-                                atcMap[row['藥品代碼'].trim()] = {
-                                    orderNote: row['醫令提示訊息'] ? row['醫令提示訊息'].trim() : '' 
-                                };
-                            }
-                        });
-
-                        processData(drugData, atcMap);
-
+                Promise.all([fetchCsv(DRUG_DATA_URL), fetchCsv(NOTICE_DATA_URL)])
+                    .then(([drugData, noticeData]) => {
+                        
+                        // 【關鍵修正】建立完整藥檔 Map 時，不要進行任何過濾！
+                        // 原始網站邏輯：只要有代碼的藥品，全部納入索引。
+                        // 這樣才能確保「異動公告」能找到那些已經被標記為停用或非本院的舊藥品資料。
                         const allDrugsMap = {};
                         drugData.forEach(row => {
-                            const drug = parseRowToDrug(row, atcMap);
+                            const drug = parseRowToDrug(row);
                             if (drug) allDrugsMap[drug.code] = drug;
                         });
 
@@ -366,67 +285,29 @@
                     })
                     .catch(err => {
                         console.error(err);
-                        error.value = "資料讀取失敗，請稍後再試。";
+                        error.value = "資料讀取失敗，請檢查網路連線。";
                         loading.value = false;
                     });
-            };
-
-            const processData = (rawData, atcMap) => {
-                let processed = rawData.map(row => {
-                    const code = row['藥品代碼'] ? row['藥品代碼'].trim() : '';
-                    if(!code) return null;
-                    if (code.length !== 6) return null;
-                    if (code.startsWith('653')) return null;
-
-                    const genericName = row['學名'] || '';
-                    const tradeName = row['商品名(英文)'] || row['商品名'] || '無商品名';
-
-                    if (tradeName.includes('贈') || genericName.includes('贈')) return null;
-                    if (tradeName.includes('(非本院品項)')) return null;
-                    if (tradeName.includes('免費')) return null;
-
-                    const status1 = row['門診停用否'] ? row['門診停用否'].trim().toUpperCase() : '';
-                    const status2 = row['住院停用否'] ? row['住院停用否'].trim().toUpperCase() : '';
-                    let isDiscontinued = (status1 === 'Y' || status2 === 'Y') && !(status1 === 'N' || status2 === 'N');
-
-                    if (isDiscontinued) return null;
-
-                    const mapData = atcMap[code] || { orderNote: '' };
-                    const imgName = row['圖檔名稱'] ? row['圖檔名稱'].trim() : '';
-                    if (!imgName) return null;
-
-                    return {
-                        code, 
-                        genericName, tradeName, 
-                        indication: row['適應症']||row['臨床用途']||'尚無資料', 
-                        sideEffect: row['副作用']||'',
-                        profNote: row['注意事項'] ? row['注意事項'].trim() : '', 
-                        appearance: row['藥品外觀'] ? row['藥品外觀'].trim() : '',
-                        imgUrl: `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload/w_400,c_scale,q_auto,f_auto/${imgName}`,
-                    };
-                }).filter(d => d !== null);
-
-                drugs.value = processed;
-                fuse = new Fuse(processed, fuseOptions);
             };
 
             const processNoticeData = (data, allDrugsMap) => {
                 if (!data || data.length === 0) return;
 
+                // 這裡維持原網站邏輯：只抓半年前的資料，或者你可以依需求調整為一年
                 const now = new Date();
-                const sixMonthsAgo = new Date();
-                sixMonthsAgo.setMonth(now.getMonth() - 6);
+                const pastLimit = new Date();
+                pastLimit.setMonth(now.getMonth() - 12); // 設定為顯示過去 12 個月內的異動
 
                 let processed = data.map(row => {
                     const dateStr = row['異動日期'] ? row['異動日期'].trim() : '';
                     if (!dateStr) return null;
 
+                    // 這裡維持原網站的日期解析邏輯
                     const dateParts = dateStr.split('/');
                     if (dateParts.length < 3) return null;
-                    
                     const noticeDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
 
-                    if (noticeDate < sixMonthsAgo) return null;
+                    if (noticeDate < pastLimit) return null;
 
                     const beforeCode = row['異動前'] ? row['異動前'].trim() : '';
                     const afterCode = row['異動後'] ? row['異動後'].trim() : '';
@@ -434,6 +315,7 @@
                     const beforeDrug = allDrugsMap[beforeCode] || null;
                     const afterDrug = allDrugsMap[afterCode] || null;
 
+                    // 這裡維持原網站的判斷邏輯：兩者都找不到才不顯示
                     if (!beforeDrug && !afterDrug) return null;
 
                     const displayDrug = afterDrug || beforeDrug;
@@ -441,13 +323,14 @@
                     return {
                         date: dateStr,
                         sortingKey: parseDateToNumber(dateStr),
+                        
                         nameBefore: beforeDrug ? beforeDrug.tradeName : '查無資料',
                         nameAfter: afterDrug ? afterDrug.tradeName : '查無資料',
                         imgBefore: beforeDrug ? beforeDrug.imgUrl : null,
                         imgAfter: afterDrug ? afterDrug.imgUrl : null,
-                        // 新增：處理藥品外觀資料
                         appearanceBefore: beforeDrug ? beforeDrug.appearance : '',
                         appearanceAfter: afterDrug ? afterDrug.appearance : '',
+                        
                         content: displayDrug.genericName,
                         indication: displayDrug.indication
                     };
@@ -460,35 +343,32 @@
             const parseDateToNumber = (dateStr) => {
                 const parts = dateStr.split('/'); 
                 if (parts.length < 3) return 0;
-                const y = parts[0];
-                const m = parts[1].padStart(2, '0'); 
-                const d = parts[2].padStart(2, '0'); 
-                return parseInt(y + m + d);
+                return parseInt(parts[0] + parts[1].padStart(2, '0') + parts[2].padStart(2, '0'));
             };
 
-            const filteredDrugs = computed(() => {
-                if (!keyword.value) return [];
-                const k = keyword.value.trim();
-                if (fuse) {
-                    const searchResults = fuse.search(k);
-                    return searchResults.map(res => res.item);
-                }
-                return [];
-            });
+            const imageLoadError = (e) => { 
+                e.target.style.display = 'none';
+                e.target.parentElement.innerHTML = '<div class="text-muted py-4"><i class="fa-solid fa-image-slash fa-2x mb-2"></i><br>圖片失效</div>';
+            }; 
 
-            const resetToHome = () => { keyword.value = ''; };
-            const openDetail = (drug) => selectedDrug.value = drug;
-            const closeDetail = () => selectedDrug.value = null;
-            const imageLoadError = (e) => { e.target.style.display = 'none'; }; 
+            const filteredNotices = computed(() => {
+                if (!searchKeyword.value) return notices.value;
+                const k = searchKeyword.value.toLowerCase();
+                return notices.value.filter(n => 
+                    n.nameAfter.toLowerCase().includes(k) || 
+                    n.nameBefore.toLowerCase().includes(k) ||
+                    n.content.toLowerCase().includes(k)
+                );
+            });
 
             onMounted(() => { fetchAllData(); });
 
             return {
-                keyword, filteredDrugs, selectedDrug, loading, error, notices,
-                resetToHome, openDetail, closeDetail, imageLoadError
+                notices, filteredNotices, loading, error, imageLoadError, searchKeyword
             };
         }
     }).mount('#app');
 </script>
+
 </body>
 </html>
